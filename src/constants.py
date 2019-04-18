@@ -1,0 +1,4 @@
+
+ROOM_WIDTH = 50
+ROOM_HEIGHT = 50
+
