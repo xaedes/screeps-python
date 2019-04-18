@@ -68,7 +68,8 @@ def update_heatmap():
 
 def display_heatmap(room):
     if "roads" not in room.memory: return
-    if "heatmap" not in room.memory.roads: return
+    if "heatmaps" not in room.memory.roads: return
+    if "walk" not in room.memory.roads.heatmaps: return
 
     # heatmap_sum = _.sum([_.sum(row) for row in room.memory.roads.heatmap])
     heatmap_max = _.max([_.max(row) for row in room.memory.roads.heatmaps.walk])

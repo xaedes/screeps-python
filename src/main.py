@@ -43,7 +43,7 @@ def main():
     num_road_constructions = roads.num_road_constructions()
     for name in Object.keys(Game.rooms):
         room = Game.rooms[name]
-        roads.display_heatmap(room)
+        # roads.display_heatmap(room)
 
         room.memory.roads.proposed = roads.propose_roads(room)
 
@@ -68,15 +68,22 @@ def main():
 
             # If there are less than 15 creeps but at least one, wait until all spawns and extensions are full before
             # spawning.
-            elif num_creeps < 20 and spawn.room.energyAvailable >= spawn.room.energyCapacityAvailable:
+            elif num_creeps < 20 and spawn.room.energyAvailable >= spawn.room.energyCapacityAvailable*0.8:
                 # If we have more energy, spawn a bigger creep.
-                if spawn.room.energyCapacityAvailable >= 50+7*50:
-                    spawn.createCreep([WORK, WORK, WORK, CARRY, CARRY, CARRY, MOVE],{})
-                elif spawn.room.energyCapacityAvailable >= 50+5*50:
-                    spawn.createCreep([WORK, WORK, CARRY, CARRY, MOVE],{})
+                # if spawn.room.energyCapacityAvailable >= 50+7*50:
+                    # spawn.createCreep([WORK, WORK, WORK, CARRY, CARRY, CARRY, MOVE],{})
+                recipes = [
+                    [WORK, CARRY, MOVE, MOVE],
+                    [WORK, CARRY, CARRY, MOVE],
+                    [WORK, WORK, CARRY, MOVE],
+                    [WORK, WORK, CARRY, CARRY, MOVE],
+                ]
+                recipe = _.sample(recipes)
+                if spawn.room.energyCapacityAvailable >= 50+recipe.length*50:
+                    spawn.createCreep(recipe,{})
                 # spawn.createCreep([WORK, CARRY, CARRY, MOVE, MOVE, MOVE])
-                else:
-                    spawn.createCreep([WORK, CARRY, MOVE, MOVE],{})
+                # else:
+                    # spawn.createCreep([WORK, CARRY, MOVE],{})
 
 
 module.exports.loop = main
