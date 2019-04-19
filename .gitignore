@@ -112,5 +112,6 @@ htmlcov/
 nosetests.xml
 coverage.xml
 /config.json
+/config.private.json
 /git-cloned/
 /markdown/
