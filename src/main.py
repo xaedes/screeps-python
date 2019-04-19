@@ -1,12 +1,16 @@
 # import harvester
 # import behaviours
 import jobs
+import logistic
 import roads
+import repair
 # import ecs
 # defs is a package which claims to export all constants and some JavaScript objects, but in reality does
 #  nothing. This is useful mainly when using an editor like PyCharm, so that it 'knows' that things like Object, Creep,
 #  Game, etc. do exist.
 from defs import *
+from .entity import *
+from .utils import *
 
 # These are currently required for Transcrypt in order to use the following names in JavaScript.
 # Without the 'noalias' pragma, each of the following would be translated into something like 'py_Infinity' or
@@ -27,20 +31,18 @@ def main():
     Main game logic loop.
     """
 
-    # # Run each creep
-    # for name in Object.keys(Game.creeps):
-        # creep = Game.creeps[name]
-
-        # harvester.run_harvester(creep)
+    for creep in Object.js_values(Game.creeps):
+        repair.repair_creep_memory(creep)
 
     jobs.process_jobs()
+    logistic.process_logistic()
 
     roads.update_heatmap()
     num_road_constructions = roads.num_road_constructions()
     for name in Object.keys(Game.rooms):
         room = Game.rooms[name]
         # roads.display_heatmap(room)
-        jobs.path_set(room.memory, "roads.proposed", roads.propose_roads(room))
+        path_set(room.memory, "roads.proposed", roads.propose_roads(room))
 
         if room.memory.roads.proposed and \
                 num_road_constructions[room.name] < MAX_ROAD_CONSTRUCTIONS_PER_ROOM:
@@ -58,13 +60,9 @@ def main():
                 Memory.mori[tomb_stone.creep.id] = {
                     "name": tomb_stone.creep.name,
                     "body": tomb_stone.creep.body,
-                    "score": jobs.path_get(tomb_stone.creep.memory,"score",0),
-                    "job": jobs.path_get(tomb_stone.creep.memory,"job","")
+                    "score": path_get(tomb_stone.creep.memory,"score",0),
+                    "job": path_get(tomb_stone.creep.memory,"job","")
                 }
-
-        # mori_by_job = 
-
-    # ecs.run_systems()
 
 
     # Run each spawn
@@ -78,12 +76,7 @@ def main():
             if num_creeps <= 0 and spawn.room.energyAvailable >= 250:
                 spawn.createCreep([WORK, CARRY, MOVE, MOVE])
 
-            # If there are less than 15 creeps but at least one, wait until all spawns and extensions are full before
-            # spawning.
             elif num_creeps < 20 and spawn.room.energyAvailable >= spawn.room.energyCapacityAvailable*0.8:
-                # If we have more energy, spawn a bigger creep.
-                # if spawn.room.energyCapacityAvailable >= 50+7*50:
-                    # spawn.createCreep([WORK, WORK, WORK, CARRY, CARRY, CARRY, MOVE],{})
                 recipes = [
                     [WORK, CARRY, MOVE, MOVE],
                     [WORK, CARRY, CARRY, MOVE],
@@ -105,11 +98,8 @@ def main():
                 recipe = _.sample(recipes)
                 if spawn.room.energyCapacityAvailable >= 50+recipe.length*50:
                     spawn.createCreep(recipe,{})
-                # spawn.createCreep([WORK, CARRY, CARRY, MOVE, MOVE, MOVE])
-                # else:
-                    # spawn.createCreep([WORK, CARRY, MOVE],{})
 
-
+    # cleanup
     if Memory.creeps:
         for name in Object.keys(Memory.creeps):
             if name not in Game.creeps:
