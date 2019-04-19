@@ -33,10 +33,6 @@ def main():
 
         # harvester.run_harvester(creep)
 
-    for name in Object.keys(Memory.creeps):
-        if name not in Game.creeps:
-            del Memory.creeps[name]
-
     jobs.process_jobs()
 
     roads.update_heatmap()
@@ -44,13 +40,29 @@ def main():
     for name in Object.keys(Game.rooms):
         room = Game.rooms[name]
         # roads.display_heatmap(room)
+        jobs.path_set(room.memory, "roads.proposed", roads.propose_roads(room))
 
-        room.memory.roads.proposed = roads.propose_roads(room)
+        if room.memory.roads.proposed and \
+                num_road_constructions[room.name] < MAX_ROAD_CONSTRUCTIONS_PER_ROOM:
 
-        if num_road_constructions[room.name] < MAX_ROAD_CONSTRUCTIONS_PER_ROOM:
             for proposal in room.memory.roads.proposed[:MAX_ROAD_CONSTRUCTIONS_PER_ROOM]:
                 if proposal:
                     room.createConstructionSite(proposal.x, proposal.y, STRUCTURE_ROAD)
+
+        if "mori" not in Memory:
+            Memory.mori = {}
+
+        tomb_stones = _.filter(room.find(FIND_TOMBSTONES),lambda ts:ts.creep.my)
+        for tomb_stone in tomb_stones:
+            if tomb_stone.creep.id not in Memory.mori:
+                Memory.mori[tomb_stone.creep.id] = {
+                    "name": tomb_stone.creep.name,
+                    "body": tomb_stone.creep.body,
+                    "score": jobs.path_get(tomb_stone.creep.memory,"score",0),
+                    "job": jobs.path_get(tomb_stone.creep.memory,"job","")
+                }
+
+        # mori_by_job = 
 
     # ecs.run_systems()
 
@@ -63,7 +75,7 @@ def main():
             num_creeps = _.sum(Game.creeps, lambda c: c.pos.roomName == spawn.pos.roomName)
             console.log("num_creeps: {}".format(num_creeps))
             # If there are no creeps, spawn a creep once energy is at 250 or more
-            if num_creeps < 0 and spawn.room.energyAvailable >= 250:
+            if num_creeps <= 0 and spawn.room.energyAvailable >= 250:
                 spawn.createCreep([WORK, CARRY, MOVE, MOVE])
 
             # If there are less than 15 creeps but at least one, wait until all spawns and extensions are full before
@@ -75,8 +87,20 @@ def main():
                 recipes = [
                     [WORK, CARRY, MOVE, MOVE],
                     [WORK, CARRY, CARRY, MOVE],
+                    # [CARRY, CARRY, CARRY, MOVE],
                     [WORK, WORK, CARRY, MOVE],
+                    # [WORK, WORK, WORK, MOVE],
                     [WORK, WORK, CARRY, CARRY, MOVE],
+                    # [WORK, WORK, WORK, WORK, MOVE],
+                    [WORK, WORK, WORK, CARRY, MOVE],
+                    [WORK, CARRY, CARRY, CARRY, MOVE],
+                    # [CARRY, CARRY, CARRY, CARRY, MOVE],
+                    [WORK, WORK, WORK, CARRY, CARRY, CARRY, MOVE],
+                    [WORK, WORK, WORK, WORK, CARRY, CARRY, MOVE],
+                    [WORK, WORK, CARRY, CARRY, CARRY, CARRY, MOVE],
+                    [WORK, WORK, WORK, WORK, CARRY, CARRY, CARRY, CARRY, MOVE],
+                    [WORK, WORK, WORK, WORK, WORK, CARRY, CARRY, CARRY, MOVE],
+                    [WORK, WORK, WORK, CARRY, CARRY, CARRY, CARRY, CARRY, MOVE],
                 ]
                 recipe = _.sample(recipes)
                 if spawn.room.energyCapacityAvailable >= 50+recipe.length*50:
@@ -85,5 +109,10 @@ def main():
                 # else:
                     # spawn.createCreep([WORK, CARRY, MOVE],{})
 
+
+    if Memory.creeps:
+        for name in Object.keys(Memory.creeps):
+            if name not in Game.creeps:
+                del Memory.creeps[name]
 
 module.exports.loop = main
