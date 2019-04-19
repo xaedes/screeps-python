@@ -373,15 +373,10 @@ def cmd_findTransportSourcePos(entity, command_stack, data_stack):
     for name in Object.keys(Game.flags):
         flag = Game.flags[name]
         flag_mem = memory_of_entity(flag)
-        if "logistic" in flag_mem:
-            if "storage" in flag_mem.logistic \
-                    and "energy" in flag_mem.logistic.storage \
-                    and flag_mem.logistic.storage.energy > 0 \
-                    and ("request" not in flag_mem.logistic \
-                         or ("energy" not in flag_mem.logistic.request \
-                             or flag_mem.logistic.request.energy <= 0)):
-
-                positions.push(flag.pos)
+        flag_storage=path_get(flag_mem,"logistic.storage.energy",0)
+        flag_harvest=path_get(flag_mem,"logistic.harvest.energy",0)
+        if flag_harvest > 0 and flag_storage > 0:
+            positions.push(flag.pos)
 
     positions = filterFindInRange(entity, positions)
     if positions.length == 0:
@@ -403,15 +398,10 @@ def cmd_findTransportTargetPos(entity, command_stack, data_stack):
     for name in Object.keys(Game.flags):
         flag = Game.flags[name]
         flag_mem = memory_of_entity(flag)
-        if "logistic" in flag_mem:
-            if "request" in flag_mem.logistic \
-                    and "energy" in flag_mem.logistic.request \
-                    and flag_mem.logistic.request.energy > 0 \
-                    and ("storage" not in flag_mem.logistic \
-                         or ("energy" not in flag_mem.logistic.storage \
-                             or flag_mem.logistic.storage.energy <= 0)):
-
-                positions.push(flag.pos)
+        flag_harvest=path_get(flag_mem,"logistic.harvest.energy",0)
+        flag_request=path_get(flag_mem,"logistic.request.energy",0)
+        if flag_request > 0 and flag_harvest <= 0:
+            positions.push(flag.pos)
 
     positions = filterFindInRange(entity, positions)
 
@@ -432,22 +422,27 @@ def cmd_findTransportTargetPos(entity, command_stack, data_stack):
 
 def cmd_findEnergyRequester(entity, command_stack, data_stack):
     energyRequesters = []
-    for name in Object.keys(Game.flags):
-        flag = Game.flags[name]
+    mem = memory_of_entity(entity)
+    for flag_name in Object.keys(Game.flags):
+        flag = Game.flags[flag_name]
         flag_mem = memory_of_entity(flag)
         if "logistic" in flag_mem:
+            is_entity_flag = path_get(mem, "logistic.flag", None) == flag_name
+            flag_quest = path_get(flag_mem, "logistic.quest", None)
+            flag_request = path_get(flag_mem, "logistic.request", None)
+            if flag_quest and flag_request:
+                if flag_quest-(1 if is_entity_flag else 0) > flag_request:
+                    continue
+
             if "non_flags" in flag_mem.logistic:
                 non_flags = _.map(flag_mem.logistic.non_flags, lambda id_: Game.getObjectById(id_))
-                other_flag_creeps = _.filter(non_flags, lambda obj: obj.id != entity.id and "name" in obj and obj.name in Game.creeps)
-                num_other_flag_creeps = other_flag_creeps.length
+                # other_flag_creeps = _.filter(non_flags, lambda obj: obj.id != entity.id and "name" in obj and obj.name in Game.creeps)
+                # num_other_flag_creeps = other_flag_creeps.length
 
                 for non_flag in non_flags:
                     non_flag_mem = memory_of_entity(non_flag)
-                    if "logistic" in non_flag_mem \
-                            and "request" in non_flag_mem.logistic \
-                            and "energy" in non_flag_mem.logistic.request \
-                            and non_flag_mem.logistic.request.energy > num_other_flag_creeps:
-
+                    non_flag_mem_request_energy = path_get(non_flag_mem, "logistic.request.energy", 0)
+                    if non_flag_mem_request_energy > 0:
                         energyRequesters.push(non_flag)
 
     energyRequesters = filterFindInRange(entity, energyRequesters)
@@ -526,9 +521,9 @@ def cmd_dropEnergy(entity, command_stack, data_stack):
     result = entity.drop(RESOURCE_ENERGY)
     if result != OK:
         console.log("[{}] Unknown result from entity.drop(RESOURCE_ENERGY): {}".format(entity.name, result))
-    else:
-        command_stack.push("scoreNUp")
-        data_stack.push(sum_carry)
+    # else:
+        # command_stack.push("scoreNUp")
+        # data_stack.push(sum_carry)
 
     return True
 
@@ -555,9 +550,9 @@ def cmd_withdraw(entity, command_stack, data_stack):
             command_stack.js_pop()
             return True
 
-        command_stack.push("scoreNUp")
+        # command_stack.push("scoreNUp")
         # data_stack.push(_.sum(entity.carry) - sum_carry)
-        data_stack.push(1)
+        # data_stack.push(1)
         return False
 
 def cmd_repair(entity, command_stack, data_stack):
@@ -589,9 +584,9 @@ def cmd_repair(entity, command_stack, data_stack):
             command_stack.js_pop()
             return True
 
-        command_stack.push("scoreNUp")
+        # command_stack.push("scoreNUp")
         # data_stack.push(_.sum(entity.carry) - sum_carry)
-        data_stack.push(1)
+        # data_stack.push(1)
         return False
 
 
@@ -607,8 +602,8 @@ def cmd_transferEnergy(entity, command_stack, data_stack):
 
         result = entity.transfer(target, RESOURCE_ENERGY)
         if result == OK:
-            command_stack.push("scoreNUp")
-            data_stack.push(sum_carry)
+            # command_stack.push("scoreNUp")
+            # data_stack.push(sum_carry)
             return False
         elif result == ERR_NOT_IN_RANGE:
             command_stack.push("moveTo")
@@ -642,9 +637,9 @@ def cmd_upgradeController(entity, command_stack, data_stack):
             # Let the entitys get a little bit closer than required to the controller, to make room for other entities.
             if not entity.pos.inRangeTo(target, 1):
                 entity.moveTo(target)
-            command_stack.push("scoreNUp")
+            # command_stack.push("scoreNUp")
             # data_stack.push(_.sum(entity.carry) - sum_carry)
-            data_stack.push(1)
+            # data_stack.push(1)
             return False
         else:
             console.log("[{}] Unknown result from entity.upgradeController({}): {}".format(
@@ -668,9 +663,9 @@ def cmd_buildStructure(entity, command_stack, data_stack):
             # Let the entitys get a little bit closer than required, to make room for other entitys.
             if not entity.pos.inRangeTo(target, 1):
                 entity.moveTo(target)
-            command_stack.push("scoreNUp")
+            # command_stack.push("scoreNUp")
             # data_stack.push(_.sum(entity.carry) - sum_carry)
-            data_stack.push(1)
+            # data_stack.push(1)
             return False
         else:
             console.log("[{}] Unknown result from entity.build({}): {}".format(
@@ -693,15 +688,37 @@ def cmd_isCarryFull(entity, command_stack, data_stack):
 
 def cmd_carriedEnergy(entity, command_stack, data_stack):
     command_stack.js_pop()
-    sum_carry = _.sum(entity.carry) # TODO filter for energy
-    data_stack.push(sum_carry)
+    carried_energy = entity.carry[RESOURCE_ENERGY]
+    # console.log("cmd_carriedEnergy", carried_energy)
+    data_stack.push(carried_energy)
     return True
+
+def cmd_stationaryQuesterJob(entity, command_stack, data_stack):
+    command_stack.js_pop()
+    # inputs target, flag
+
+    command_stack.push("useEnergyOnTarget")
+    command_stack.push("getEnergyFromFlag")
+
+    command_stack.push("storeMemory")
+    data_stack.push(1)
+    data_stack.push("logistic.quest.energy")
+
+    command_stack.push("storeMemory")
+    data_stack.push(5)
+    data_stack.push("range.find")
+
+    return True
+
 
 def cmd_stationaryHarvesterJob(entity, command_stack, data_stack):
     command_stack.js_pop()
 
     command_stack.push("dropEnergy")
-    command_stack.push("scoreNUp")
+    command_stack.push("scoreNUp") # += carriedEnergyNow - carriedEnergyBefore
+    data_stack.push(-1)
+    command_stack.push("mul")
+    command_stack.push("sub")
     command_stack.push("carriedEnergy")
 
     command_stack.push("harvestEnergy")
@@ -709,6 +726,8 @@ def cmd_stationaryHarvesterJob(entity, command_stack, data_stack):
     command_stack.push("pushData_1")
     command_stack.push("duplicateData")
     command_stack.push("findEnergySourceWithFreeSlot")
+    
+    command_stack.push("carriedEnergy")
 
     command_stack.push("storeMemory")
     data_stack.push(1)
@@ -721,13 +740,17 @@ def cmd_energyPickupJob(entity, command_stack, data_stack):
 
     sum_carry = _.sum(entity.carry) # TODO filter for energy
     if sum_carry < entity.carryCapacity:
-        command_stack.push("scoreNUp")
-        data_stack.push(entity.carryCapacity-sum_carry)
+        command_stack.push("scoreNUp") # += carriedEnergyNow - carriedEnergyBefore
+        data_stack.push(-1)
+        command_stack.push("mul")
+        command_stack.push("sub")
+        command_stack.push("carriedEnergy")
         command_stack.push("pickup")
         command_stack.push("moveTo")
         command_stack.push("pushData_1")
         command_stack.push("duplicateData")
         command_stack.push("findDroppedEnergy")
+        command_stack.push("carriedEnergy")
 
     return True
 
@@ -736,13 +759,17 @@ def cmd_harvestEnergyJob(entity, command_stack, data_stack):
 
     sum_carry = _.sum(entity.carry) # TODO filter for energy
     if sum_carry < entity.carryCapacity:
-        command_stack.push("scoreNUp")
-        data_stack.push(entity.carryCapacity-sum_carry)
+        command_stack.push("scoreNUp") # += carriedEnergyNow - carriedEnergyBefore
+        data_stack.push(-1)
+        command_stack.push("mul")
+        command_stack.push("sub")
+        command_stack.push("carriedEnergy")
         command_stack.push("harvestEnergy")
         command_stack.push("moveTo")
         command_stack.push("pushData_1")
         command_stack.push("duplicateData")
         command_stack.push("findEnergySourceWithFreeSlot")
+        command_stack.push("carriedEnergy")
 
     return True
 
@@ -752,11 +779,15 @@ def cmd_depositEnergyJob(entity, command_stack, data_stack):
     sum_carry = _.sum(entity.carry) # TODO filter for energy
     if sum_carry > 0:
         command_stack.push("depositEnergyJob")
+        command_stack.push("scoreNUp") # += carriedEnergyBefore - carriedEnergyNow
+        command_stack.push("sub")
+        command_stack.push("carriedEnergy")
         command_stack.push("transferEnergy")
         command_stack.push("moveTo")
         command_stack.push("pushData_1")
         command_stack.push("duplicateData")
         command_stack.push("findEnergyDeposit")
+        command_stack.push("carriedEnergy")
 
     return True
 
@@ -778,11 +809,15 @@ def cmd_energyPickupDepositJob(entity, command_stack, data_stack):
 
 def cmd_upgradeControllerJob(entity, command_stack, data_stack):
     command_stack.js_pop()
+    command_stack.push("scoreNUp") # += carriedEnergyBefore - carriedEnergyNow
+    command_stack.push("sub")
+    command_stack.push("carriedEnergy")
     command_stack.push("upgradeController")
     command_stack.push("moveTo")
     command_stack.push("pushData_2")
     command_stack.push("duplicateData")
     command_stack.push("findController")
+    command_stack.push("carriedEnergy")
 
     command_stack.push("dropn_if")
     command_stack.push("isCarryEmpty")
@@ -793,11 +828,15 @@ def cmd_upgradeControllerJob(entity, command_stack, data_stack):
 
 def cmd_repairerJob(entity, command_stack, data_stack):
     command_stack.js_pop()
+    command_stack.push("scoreNUp") # += carriedEnergyBefore - carriedEnergyNow
+    command_stack.push("sub")
+    command_stack.push("carriedEnergy")
     command_stack.push("repair")
     command_stack.push("moveTo")
     command_stack.push("pushData_2")
     command_stack.push("duplicateData")
     command_stack.push("findRepairable")
+    command_stack.push("carriedEnergy")
 
     command_stack.push("dropn_if")
     command_stack.push("isCarryEmpty")
@@ -808,17 +847,94 @@ def cmd_repairerJob(entity, command_stack, data_stack):
 
 def cmd_buildStructureJob(entity, command_stack, data_stack):
     command_stack.js_pop()
+    command_stack.push("scoreNUp") # += carriedEnergyBefore - carriedEnergyNow
+    command_stack.push("sub")
+    command_stack.push("carriedEnergy")
     command_stack.push("buildStructure")
     command_stack.push("moveTo")
     command_stack.push("pushData_2")
     command_stack.push("duplicateData")
     command_stack.push("findConstructionSite")
+    command_stack.push("carriedEnergy")
 
     command_stack.push("dropn_if")
     command_stack.push("isCarryEmpty")
     command_stack.push("pushData_5")
 
     command_stack.push("energyPickupJob")
+    return True
+
+def cmd_useEnergyOnTarget(entity, command_stack, data_stack):
+    sum_carry = _.sum(entity.carry) # TODO filter for energy
+    if sum_carry == 0:
+        command_stack.js_pop()
+        data_stack.js_pop()
+    else:
+        # try different methods to use energy
+        command_stack.js_pop()
+        command_stack.push("transferEnergy")
+        command_stack.push("repair")
+        command_stack.push("buildStructure")
+        command_stack.push("upgradeController")
+        command_stack.push("duplicateData")
+        command_stack.push("duplicateData")
+        command_stack.push("duplicateData")
+    
+    return True
+
+
+
+def cmd_energyRequestResponseJob(entity, command_stack, data_stack):
+    command_stack.js_pop()
+
+    command_stack.push("scoreNUp") # += carriedEnergyBefore - carriedEnergyNow
+    command_stack.push("sub")
+    command_stack.push("carriedEnergy")
+
+    command_stack.push("useEnergyOnTarget")
+    command_stack.push("moveTo")
+    command_stack.push("pushData_2")
+    command_stack.push("duplicateData")
+    command_stack.push("findEnergyRequester")
+    
+    command_stack.push("carriedEnergy")
+
+    command_stack.push("dropn_if")
+    command_stack.push("isCarryEmpty")
+    command_stack.push("pushData_5")
+
+    command_stack.push("energyPickupJob")
+
+    command_stack.push("storeMemory")
+    data_stack.push(1)
+    data_stack.push("logistic.quest.energy")
+
+    return True
+
+def cmd_transporterJob(entity, command_stack, data_stack):
+    command_stack.js_pop()
+
+    command_stack.push("scoreNUp") # += carriedEnergyBefore - carriedEnergyNow
+    command_stack.push("sub")
+    command_stack.push("carriedEnergy")
+    command_stack.push("dropEnergy")
+    command_stack.push("moveToPos")
+    command_stack.push("pushData_2")
+    command_stack.push("findTransportTargetPos")
+    command_stack.push("carriedEnergy")
+
+    command_stack.push("dropn_if")
+    command_stack.push("isCarryEmpty")
+    command_stack.push("pushData_4")
+
+    command_stack.push("energyPickupJob")
+    command_stack.push("moveToPos")
+    command_stack.push("pushData_2")
+    command_stack.push("findTransportSourcePos")
+
+    command_stack.push("dropn_if")
+    command_stack.push("isCarryFull")
+    command_stack.push("pushData_4")
     return True
 
 def cmd_employ(entity, command_stack, data_stack):
@@ -864,31 +980,118 @@ def path_arr(path):
     else:
         return path
 
-def path_get(obj, path, default):
+def path_get(obj, path, default_value):
     path_arr_ = path_arr(path)
-    current_obj = obj
+    # wrapped with object, so inner loop accesses wont be transpiled to local variables
+    current = {"obj":obj}
     for item in path_arr_:
-        if item in obj:
-            current_obj = current_obj[item]
+        if item in current.obj:
+            current.obj = current.obj[item]
         else:
-            return default
-    return current_obj
+            return default_value
+    return current.obj
+
             
 def path_set(obj, path, value):
     path_arr_ = path_arr(path)
-    current_obj = obj
+    # wrapped with object, so inner loop accesses wont be transpiled to local variables
+    current = {"obj":obj}
     for item in path_arr_[:path_arr_.length-1]:
-        if item not in obj:
-            current_obj[item] = {}
-        current_obj = current_obj[item] 
+        if item not in current.obj:
+            current.obj[item] = {}
+        current.obj = current.obj[item]
     item = path_arr_[path_arr_.length-1]
-    current_obj[item] = value
+    current.obj[item] = value
 
             
 def cmd_logData(entity, command_stack, data_stack):
     console.log(data_stack[-1])
     command_stack.js_pop()
     data_stack.js_pop()
+    return True
+
+def cmd_add(entity, command_stack, data_stack):
+    if data_stack.length<2: 
+        command_stack.js_pop()
+        return True
+    try:
+        a = float(data_stack[data_stack.length-2])
+        b = float(data_stack[data_stack.length-1])
+        c = a+b
+        # console.log("add(",a,",",b,") =",c)
+        command_stack.js_pop()
+        data_stack.js_pop()
+        data_stack.js_pop()
+        data_stack.push(c)
+    except:
+        command_stack.js_pop()
+        data_stack.js_pop()
+        data_stack.js_pop()
+        data_stack.push(None)
+    return True
+
+def cmd_sub(entity, command_stack, data_stack):
+    if data_stack.length<2: 
+        command_stack.js_pop()
+        return True
+    # console.log("data_stack.length               ", data_stack.length)
+    # console.log("data_stack[data_stack.length-2] ", data_stack[data_stack.length-2])
+    # console.log("data_stack[data_stack.length-1] ", data_stack[data_stack.length-1])
+    try:
+        a = float(data_stack[data_stack.length-2])
+        b = float(data_stack[data_stack.length-1])
+        c = a-b
+        # console.log("sub(",a,",",b,") =",c)
+        command_stack.js_pop()
+        data_stack.js_pop()
+        data_stack.js_pop()
+        data_stack.push(c)
+    except:
+        command_stack.js_pop()
+        data_stack.js_pop()
+        data_stack.js_pop()
+        data_stack.push(None)
+    return True
+
+def cmd_mul(entity, command_stack, data_stack):
+    if data_stack.length<2: 
+        command_stack.js_pop()
+        return True
+
+    try:
+        a = float(data_stack[data_stack.length-2])
+        b = float(data_stack[data_stack.length-1])
+        c = a*b
+        # console.log("mul(",a,",",b,") =",c)
+        command_stack.js_pop()
+        data_stack.js_pop()
+        data_stack.js_pop()
+        data_stack.push(c)
+    except:
+        command_stack.js_pop()
+        data_stack.js_pop()
+        data_stack.js_pop()
+        data_stack.push(None)
+    return True
+
+def cmd_div(entity, command_stack, data_stack):
+    if data_stack.length<2: 
+        command_stack.js_pop()
+        return True
+    try:
+        a = float(data_stack[data_stack.length-2])
+        b = float(data_stack[data_stack.length-1])
+        c = a/b
+        # console.log("div(",a,",",b,") =",c)
+        command_stack.js_pop()
+        data_stack.js_pop()
+        data_stack.js_pop()
+        data_stack.push(c)
+    except:
+        command_stack.js_pop()
+        data_stack.js_pop()
+        data_stack.js_pop()
+        data_stack.push(None)
     return True
 
 def cmd_loadMemory(entity, command_stack, data_stack):
@@ -908,6 +1111,7 @@ def cmd_storeMemory(entity, command_stack, data_stack):
 
     command_stack.js_pop()
     data_stack.js_pop()
+    data_stack.js_pop()
     return True
 
 def cmd_loadEntityAttr(entity, command_stack, data_stack):
@@ -924,7 +1128,75 @@ def cmd_storeEntityAttr(entity, command_stack, data_stack):
 
     command_stack.js_pop()
     data_stack.js_pop()
+    data_stack.js_pop()
     return True
+
+def cmd_loadData(entity, command_stack, data_stack):
+    if data_stack.length < 1: 
+        command_stack.js_pop()
+        return True
+
+    idx = data_stack[data_stack.length-1]
+    while idx < 0:
+        idx += data_stack.length
+    while idx >= data_stack.length:
+        idx -= data_stack.length
+    command_stack.js_pop()
+    data_stack.js_pop()
+    if 0 <= idx < data_stack.length:
+        data_stack.push(data_stack[idx])
+    return True
+
+def cmd_loadRelData(entity, command_stack, data_stack):
+    if data_stack.length < 2: 
+        command_stack.js_pop()
+        data_stack.js_pop()
+        if data_stack.length > 0:
+            data_stack.js_pop()
+        return True
+
+    idx = data_stack[data_stack.length-2]
+    offset = data_stack[data_stack.length-1]
+    while idx+offset < 0:
+        offset += data_stack.length
+    while idx+offset >= data_stack.length:
+        offset -= data_stack.length
+    command_stack.js_pop()
+    data_stack.js_pop()
+    if 0 <= idx+offset < data_stack.length:
+        data_stack.push(data_stack[idx+offset])
+    return True
+
+def cmd_loadArgument(entity, command_stack, data_stack):
+    if data_stack.length < 1: 
+        command_stack.js_pop()
+        return True
+    mem = memory_of_entity(entity)
+    bp = path_get(mem, "bp", None)
+    if bp:
+        idx = bp-data_stack[data_stack.length-1]
+        command_stack.js_pop()
+        data_stack.js_pop()
+        data_stack.push(data_stack[idx])
+        return True
+    else:
+        command_stack.js_pop()
+        data_stack.js_pop()
+        data_stack.push(None)
+        return True
+
+def cmd_loadBasePointer(entity, command_stack, data_stack):
+    mem = memory_of_entity(entity)
+    command_stack.js_pop()
+    data_stack.push(path_get(mem, "bp", None))
+    return True
+
+def cmd_storeBasePointer(entity, command_stack, data_stack):
+    mem = memory_of_entity(entity)
+    path_set(mem, "bp", data_stack.length-1)
+    command_stack.js_pop()
+    return True
+
 
 def cmd_constructionSite(entity, command_stack, data_stack):
     if entity.type == STRUCTURE_TOWER:
@@ -940,6 +1212,7 @@ def cmd_scoreUp(entity, command_stack, data_stack):
             mem.score = 0
         mem.score += 1
     command_stack.js_pop()
+    return True
 
 def cmd_scoreDown(entity, command_stack, data_stack):
     mem = memory_of_entity(entity)
@@ -948,6 +1221,7 @@ def cmd_scoreDown(entity, command_stack, data_stack):
             mem.score = 0
         mem.score -= 1
     command_stack.js_pop()
+    return True
 
 def cmd_scoreNUp(entity, command_stack, data_stack):
     mem = memory_of_entity(entity)
@@ -957,6 +1231,7 @@ def cmd_scoreNUp(entity, command_stack, data_stack):
         mem.score += data_stack[data_stack.length-1]
     command_stack.js_pop()
     data_stack.js_pop()
+    return True
 
 def cmd_scoreNDown(entity, command_stack, data_stack):
     mem = memory_of_entity(entity)
@@ -970,18 +1245,14 @@ def cmd_scoreNDown(entity, command_stack, data_stack):
 def cmd_tower(entity, command_stack, data_stack):
     mem = memory_of_entity(entity)
     # mem = entity.room.memory
-    if mem:
-        if "logistic" not in mem:
-            mem.logistic = {}
-        if "request" not in mem.logistic:
-            mem.logistic.request = {}
-        if "energy" not in mem.logistic.request:
-            mem.logistic.request.energy = 0
-
-
-    if entity.structureType == STRUCTURE_TOWER:
+    if mem and entity.structureType == STRUCTURE_TOWER:
         # create job posting for this
-        if entity.energy / entity.energyCapacity < 0.5:
+        path_set(mem, "logistic.request.energy", 0)
+        if entity.energy / entity.energyCapacity < 0.25:
+            mem.logistic.request.energy = 3
+        elif entity.energy / entity.energyCapacity < 0.50:
+            mem.logistic.request.energy = 2
+        elif entity.energy / entity.energyCapacity < 0.75:
             mem.logistic.request.energy = 1
         else:
             mem.logistic.request.energy = 0
@@ -1006,70 +1277,6 @@ def cmd_tower(entity, command_stack, data_stack):
     return False
 
 
-def cmd_useEnergyOnTarget(entity, command_stack, data_stack):
-    sum_carry = _.sum(entity.carry) # TODO filter for energy
-    if sum_carry == 0:
-        command_stack.js_pop()
-        data_stack.js_pop()
-    else:
-        # try different methods to use energy
-        command_stack.js_pop()
-        command_stack.push("transferEnergy")
-        command_stack.push("repair")
-        command_stack.push("buildStructure")
-        command_stack.push("upgradeController")
-        command_stack.push("duplicateData")
-        command_stack.push("duplicateData")
-        command_stack.push("duplicateData")
-    
-    return True
-
-
-
-def cmd_energyRequestResponseJob(entity, command_stack, data_stack):
-    command_stack.js_pop()
-
-
-    command_stack.push("useEnergyOnTarget")
-    command_stack.push("moveTo")
-    command_stack.push("pushData_2")
-    command_stack.push("duplicateData")
-    command_stack.push("findEnergyRequester")
-
-    command_stack.push("dropn_if")
-    command_stack.push("isCarryEmpty")
-    command_stack.push("pushData_5")
-
-    command_stack.push("energyPickupJob")
-
-    command_stack.push("storeMemory")
-    data_stack.push(1)
-    data_stack.push("logistic.quest.energy")
-
-    return True
-
-def cmd_transporterJob(entity, command_stack, data_stack):
-    command_stack.js_pop()
-
-    command_stack.push("dropEnergy")
-    command_stack.push("moveToPos")
-    command_stack.push("pushData_2")
-    command_stack.push("findTransportTargetPos")
-
-    command_stack.push("dropn_if")
-    command_stack.push("isCarryEmpty")
-    command_stack.push("pushData_4")
-
-    command_stack.push("energyPickupJob")
-    command_stack.push("moveToPos")
-    command_stack.push("pushData_2")
-    command_stack.push("findTransportSourcePos")
-
-    command_stack.push("dropn_if")
-    command_stack.push("isCarryFull")
-    command_stack.push("pushData_4")
-    return True
-
 def cmd_requestEnergy(entity, command_stack, data_stack):
     mem = memory_of_entity(entity)
     # mem = entity.room.memory
@@ -1080,8 +1287,9 @@ def cmd_requestEnergy(entity, command_stack, data_stack):
             mem.logistic.request = {}
         if "energy" not in mem.logistic.request:
             mem.logistic.request.energy = 0
-
-        mem.logistic.request.energy = 1
+        
+        path_set(mem, "logistic.request.energy", 
+            1 + path_get(mem, "logistic.request.energy", 0))
 
     command_stack.js_pop()
     return True
@@ -1466,6 +1674,42 @@ commands = {
         "required_body_parts": [],
         "loop": cmd_storeEntityAttr
     },
+    "loadData": {
+        "required_body_parts": [],
+        "loop": cmd_loadData
+    },
+    "loadRelData": {
+        "required_body_parts": [],
+        "loop": cmd_loadRelData
+    },
+    "loadArgument": {
+        "required_body_parts": [],
+        "loop": cmd_loadArgument
+    },
+    "loadBasePointer": {
+        "required_body_parts": [],
+        "loop": cmd_loadBasePointer
+    },
+    "storeBasePointer": {
+        "required_body_parts": [],
+        "loop": cmd_storeBasePointer
+    },
+    "add": {
+        "required_body_parts": [],
+        "loop": cmd_add
+    },
+    "sub": {
+        "required_body_parts": [],
+        "loop": cmd_sub
+    },
+    "mul": {
+        "required_body_parts": [],
+        "loop": cmd_mul
+    },
+    "div": {
+        "required_body_parts": [],
+        "loop": cmd_div
+    },
 }
 
 # for k in range(10):
@@ -1487,14 +1731,14 @@ jobs = {
                  "data_stack": [] },
     "builder": { "command_stack": ["employ","buildStructureJob","buildStructureJob","buildStructureJob"], 
                  "data_stack": [] },
-    "constructionSite": { "command_stack": ["requestEnergy", "repeatCommand"], 
-                          "data_stack": [] },
+    "constructionSite": { "command_stack": ["storeMemory"], 
+                          "data_stack": [0, "logistic.request.energy"] },
     "structure": { "command_stack": [], 
                    "data_stack": [] },
     "flag": { "command_stack": ["flag"], 
               "data_stack": [] },
-    "controller": { "command_stack": ["requestEnergy", "repeatCommand"], 
-                    "data_stack": [] },
+    "controller": { "command_stack": ["storeMemory"], 
+                    "data_stack": [2, "logistic.request.energy"] },
     "transporter": { "command_stack": ["transporterJob", "repeatCommand"], 
                      "data_stack": [] },
     "energyRequestResponse": { "command_stack": ["energyRequestResponseJob", "repeatCommand"], 
@@ -1559,6 +1803,12 @@ def memory_of_entity(entity):
 
         return Memory.entities[id_]
 
+def repair_creep_memory(entity):
+    mem = entity.memory
+    if "score" in mem:
+        if mem.score == None:
+            mem.score = 0
+
 def process_job(entity):
     memory = memory_of_entity(entity)
     if "job" not in memory: return False
@@ -1600,8 +1850,8 @@ def process_vm(entity, command_stack, data_stack):
         if cmd in commands:
             name_ = name_of_entity(entity)
             id_ = id_of_entity(entity)
-            if name_ == "Sophia":
-                console.log("[",name_,"]","execute", cmd)
+            # if name_ == "Emily":
+                # console.log("[",name_,"]","execute", cmd)
             # console.log("[",name_,"]","execute", cmd)
             res = commands[cmd].loop(entity, command_stack, data_stack)
             # if name_ == "Ella":
@@ -1651,6 +1901,7 @@ def process_jobs():
 
     for name in Object.keys(Game.creeps):
         creep = Game.creeps[name]
+        repair_creep_memory(creep)
         if not process_job(creep):
             employ(creep)
 
