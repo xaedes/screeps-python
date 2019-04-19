@@ -128,7 +128,7 @@ def load_config(base_dir):
                         is unable to import nested .py files""")
     args = parser.parse_args()
 
-    config_file = os.path.join(base_dir, 'config.json')
+    config_file = os.path.join(base_dir, args.config_file)
 
     with open(os.path.join(base_dir, config_file)) as f:
         config_json = json.load(f)
