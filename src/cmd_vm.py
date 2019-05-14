@@ -20,10 +20,29 @@ def register_commands(commands):
         "required_body_parts": [],
         "loop": cmd_drop_if
     };
-
     commands["duplicateData"] = {
         "required_body_parts": [],
         "loop": cmd_duplicateData
+    };
+    commands["swapData"] = {
+        "required_body_parts": [],
+        "loop": cmd_swapData
+    };
+    commands["clearAll"] = {
+        "required_body_parts": [],
+        "loop": cmd_clearAll
+    };
+    commands["pushToStacks"] = {
+        "required_body_parts": [],
+        "loop": cmd_pushToStacks
+    };
+    commands["compare"] = {
+        "required_body_parts": [],
+        "loop": cmd_compare
+    };
+    commands["length"] = {
+        "required_body_parts": [],
+        "loop": cmd_length
     };
     commands["pushData_0"] = {
         "required_body_parts": [],
@@ -115,13 +134,68 @@ def cmd_duplicateData(entity, command_stack, data_stack):
     data_stack.push(data_stack[data_stack.length-1])
     return True
 
+def cmd_swapData(entity, command_stack, data_stack):
+    command_stack.js_pop()
+    a = data_stack[data_stack.length-1]
+    b = data_stack[data_stack.length-2]
+    data_stack[data_stack.length-1] = b
+    data_stack[data_stack.length-2] = a
+    return True
+
 def cmd_repeatCommand(entity, command_stack, data_stack):
     command_stack.push(command_stack[command_stack.length-2])
+    return True
+
+    
+def cmd_clearAll(entity, command_stack, data_stack):
+    command_stack.clear()
+    command_stack.clear()
     return True
 
 def cmd_pushData(entity, command_stack, data_stack, data):
     command_stack.js_pop()
     data_stack.push(data)
+    return True
+
+def cmd_pushToStacks(entity, command_stack, data_stack):
+    command_stack.js_pop()
+    new_command_stack, new_data_stack = data_stack[data_stack.length-1]
+    for cmd in new_command_stack:
+        command_stack.push(cmd)
+    for data in new_data_stack:
+        data_stack.push(data)
+    return True
+
+def cmd_compare(entity, command_stack, data_stack):
+    command_stack.js_pop()
+    cond = data_stack[data_stack.length-1]
+    b = data_stack[data_stack.length-2]
+    a = data_stack[data_stack.length-3]
+    data_stack.js_pop()
+    data_stack.js_pop()
+    data_stack.js_pop()
+    res = None
+    if cond == "=" or cond == "==" or cond == "eq":
+        data_stack.push( (a == b) )
+    elif cond == "<=" or cond == "leq":
+        data_stack.push( (a <= b) )
+    elif cond == "<" or cond == "lt":
+        data_stack.push( (a < b) )
+    elif cond == ">=" or cond == "geq":
+        data_stack.push( (a >= b) )
+    elif cond == ">" or cond == "gt":
+        data_stack.push( (a > b) )
+    elif cond == "!=" or cond == "neq":
+        data_stack.push( (a != b) )
+    else:
+        data_stack.push( None )
+    return True
+
+def cmd_length(entity, command_stack, data_stack):
+    command_stack.js_pop()
+    a = data_stack[data_stack.length-1]
+    data_stack.push(a.length)
+    data_stack.js_pop()
     return True
 
 def cmd_dropn_if(entity, command_stack, data_stack):
@@ -282,8 +356,7 @@ def cmd_loadData(entity, command_stack, data_stack):
         idx -= data_stack.length
     command_stack.js_pop()
     data_stack.js_pop()
-    if 0 <= idx < data_stack.length:
-        data_stack.push(data_stack[idx])
+    data_stack.push(data_stack[idx])
     return True
 
 def cmd_loadRelData(entity, command_stack, data_stack):
@@ -302,8 +375,8 @@ def cmd_loadRelData(entity, command_stack, data_stack):
         offset -= data_stack.length
     command_stack.js_pop()
     data_stack.js_pop()
-    if 0 <= idx+offset < data_stack.length:
-        data_stack.push(data_stack[idx+offset])
+    data_stack.js_pop()
+    data_stack.push(data_stack[idx+offset])
     return True
 
 def cmd_loadArgument(entity, command_stack, data_stack):

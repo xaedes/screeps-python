@@ -7,6 +7,7 @@ import cmd_logistic
 import cmd_jobs
 import cmd_tower
 import cmd_score
+import cmd_controller
 
 __pragma__('noalias', 'name')
 __pragma__('noalias', 'undefined')
@@ -26,3 +27,4 @@ cmd_logistic.register_commands(commands)
 cmd_jobs.register_commands(commands)
 cmd_tower.register_commands(commands)
 cmd_score.register_commands(commands)
+cmd_controller.register_commands(commands)

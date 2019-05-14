@@ -143,9 +143,15 @@ def cmd_findRepairable(entity, command_stack, data_stack):
 
 def cmd_findEnergyDeposit(entity, command_stack, data_stack):
     # Get a random new source and save it
+    test_1 = lambda s: ( ((s.structureType == STRUCTURE_SPAWN) or (s.structureType == STRUCTURE_EXTENSION))
+                        and (s.energy < s.energyCapacity)
+                        and (s.my))
+    test_2 = lambda s: ( (s.structureType == STRUCTURE_CONTAINER)
+                        and (_.sum(s.store) < s.storeCapacity))
     deposit_targets = filterFindInRange(entity, _.filter(entity.room.find(FIND_STRUCTURES),
-        lambda s: (s.structureType == STRUCTURE_SPAWN or s.structureType == STRUCTURE_EXTENSION)
-                   and s.energy < s.energyCapacity))
+        test_1
+        # lambda s: (test_1(s) or test_2(s))
+        ))
     if deposit_targets.length == 0:
         return False
     else:
@@ -237,13 +243,14 @@ def cmd_findTransportTargetPos(entity, command_stack, data_stack):
 def cmd_findEnergyRequester(entity, command_stack, data_stack):
     energyRequesters = []
     mem = memory_of_entity(entity)
+    entity_flag = path_get(mem, "logistic.flag", None)
     for flag_name in Object.keys(Game.flags):
         flag = Game.flags[flag_name]
         flag_mem = memory_of_entity(flag)
         if "logistic" in flag_mem:
-            is_entity_flag = path_get(mem, "logistic.flag", None) == flag_name
-            flag_quest = path_get(flag_mem, "logistic.quest", None)
-            flag_request = path_get(flag_mem, "logistic.request", None)
+            is_entity_flag = entity_flag == flag_name
+            flag_quest = path_get(flag_mem, "logistic.quest.energy", None)
+            flag_request = path_get(flag_mem, "logistic.request.energy", None)
             if flag_quest and flag_request:
                 if flag_quest-(1 if is_entity_flag else 0) > flag_request:
                     continue

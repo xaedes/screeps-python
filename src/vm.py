@@ -35,10 +35,13 @@ def init_vm(entity):
 def process_vm(entity):
     memory = memory_of_entity(entity)
 
-    max_iter = path_get(memory, "vm.max_iter", 10)
+    max_iter = path_get(memory, "vm.max_iter", 3)
     k = 0
     while process_vm_step(entity, memory.vm.cmd, memory.vm.dta) and k < max_iter:
         k+=1
+    
+    path_set(memory, "vm.last_num_iter", k+1)
+    return k+1
 
 # returns whether to continue vm processing or not
 def process_vm_step(entity, command_stack, data_stack):
@@ -49,12 +52,19 @@ def process_vm_step(entity, command_stack, data_stack):
             id_ = id_of_entity(entity)
             # if name_ == "Emily":
                 # console.log("[",name_,"]","execute", cmd)
+            # console.log("[",id_,"]","execute", cmd)
             # console.log("[",name_,"]","execute", cmd)
-            res = commands[cmd].loop(entity, command_stack, data_stack)
+            try:
+                res = commands[cmd].loop(entity, command_stack, data_stack)
             # if name_ == "Ella":
                 # console.log("[",name_,"]","  command_stack ", command_stack)
                 # console.log("[",name_,"]","  data_stack    ", data_stack)
-            return res
+                return res
+            except:
+                console.log("[",name_,"]"," encountered exception when executing cmd", cmd, ", resetting vm.")
+                command_stack.js_clear()
+                data_stack.js_clear()
+                raise
         else:
             console.log("drop unknown cmd", cmd)
             command_stack.js_pop()

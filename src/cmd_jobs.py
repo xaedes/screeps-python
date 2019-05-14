@@ -78,9 +78,6 @@ def cmd_stationaryQuesterJob(entity, command_stack, data_stack):
     data_stack.push(1)
     data_stack.push("logistic.quest.energy")
 
-    command_stack.push("storeMemory")
-    data_stack.push(5)
-    data_stack.push("range.find")
 
     return True
 
@@ -88,9 +85,7 @@ def cmd_stationaryHarvesterJob(entity, command_stack, data_stack):
     command_stack.js_pop()
 
     command_stack.push("dropEnergy")
-    command_stack.push("scoreNUp") # += carriedEnergyNow - carriedEnergyBefore
-    data_stack.push(-1)
-    command_stack.push("mul")
+    command_stack.push("scoreNDown") # += carriedEnergyNow - carriedEnergyBefore
     command_stack.push("sub")
     command_stack.push("carriedEnergy")
 
@@ -111,11 +106,9 @@ def cmd_stationaryHarvesterJob(entity, command_stack, data_stack):
 def cmd_energyPickupJob(entity, command_stack, data_stack):
     command_stack.js_pop()
 
-    sum_carry = _.sum(entity.carry) # TODO filter for energy
+    sum_carry = _.sum(entity.carry) 
     if sum_carry < entity.carryCapacity:
-        command_stack.push("scoreNUp") # += carriedEnergyNow - carriedEnergyBefore
-        data_stack.push(-1)
-        command_stack.push("mul")
+        command_stack.push("scoreNDown") # += carriedEnergyNow - carriedEnergyBefore
         command_stack.push("sub")
         command_stack.push("carriedEnergy")
         command_stack.push("pickup")
@@ -130,11 +123,9 @@ def cmd_energyPickupJob(entity, command_stack, data_stack):
 def cmd_harvestEnergyJob(entity, command_stack, data_stack):
     command_stack.js_pop()
 
-    sum_carry = _.sum(entity.carry) # TODO filter for energy
+    sum_carry = _.sum(entity.carry) 
     if sum_carry < entity.carryCapacity:
-        command_stack.push("scoreNUp") # += carriedEnergyNow - carriedEnergyBefore
-        data_stack.push(-1)
-        command_stack.push("mul")
+        command_stack.push("scoreNDown") # += carriedEnergyNow - carriedEnergyBefore
         command_stack.push("sub")
         command_stack.push("carriedEnergy")
         command_stack.push("harvestEnergy")
@@ -149,8 +140,7 @@ def cmd_harvestEnergyJob(entity, command_stack, data_stack):
 def cmd_depositEnergyJob(entity, command_stack, data_stack):
     command_stack.js_pop()
 
-    sum_carry = _.sum(entity.carry) # TODO filter for energy
-    if sum_carry > 0:
+    if entity.carry["energy"] > 0:
         command_stack.push("depositEnergyJob")
         command_stack.push("scoreNUp") # += carriedEnergyBefore - carriedEnergyNow
         command_stack.push("sub")

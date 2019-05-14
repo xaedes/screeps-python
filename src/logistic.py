@@ -23,11 +23,11 @@ def assign_flags():
         lambda entity: "secondaryColor" not in entity)
     if flags.length == 0: return
     for flag in flags:
-
         mem = memory_of_entity(flag)
         mem.logistic.non_flags = []
 
     for non_flag in non_flags:
+        if not non_flag.room: continue
         mem = memory_of_entity(non_flag)
         closest_flag = non_flag.pos.findClosestByRange(_.filter(flags, lambda flag: flag.room.name == non_flag.room.name))
         threshold = mem.logistic.range.assign if ("range" in mem.logistic and "assign" in mem.logistic.range) else 5

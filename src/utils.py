@@ -39,6 +39,19 @@ def path_set(obj, path, value):
     item = path_arr_[path_arr_.length-1]
     current.obj[item] = value
 
+def path_init(obj, path, value):
+    path_arr_ = path_arr(path)
+    # wrapped with object, so inner loop accesses wont be transpiled to local variables
+    current = {"obj":obj}
+    for item in path_arr_[:path_arr_.length-1]:
+        if item not in current.obj:
+            current.obj[item] = {}
+        current.obj = current.obj[item]
+    item = path_arr_[path_arr_.length-1]
+    if item not in current.obj:
+        current.obj[item] = value
+    return current.obj[item]
+
 def distance(a,b):
     return a.pos.getRangeTo(b.pos)
 

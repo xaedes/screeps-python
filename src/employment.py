@@ -1,5 +1,6 @@
 from defs import *
 from .entity import *
+from .utils import *
 
 __pragma__('noalias', 'name')
 __pragma__('noalias', 'undefined')
@@ -24,13 +25,13 @@ jobs = {
     "builder": { "command_stack": ["employ","buildStructureJob","buildStructureJob","buildStructureJob"], 
                  "data_stack": [] },
     "constructionSite": { "command_stack": ["storeMemory"], 
-                          "data_stack": [0, "logistic.request.energy"] },
+                          "data_stack": [1, "logistic.request.energy"] },
     "structure": { "command_stack": [], 
                    "data_stack": [] },
     "flag": { "command_stack": ["flag"], 
               "data_stack": [] },
-    "controller": { "command_stack": ["storeMemory"], 
-                    "data_stack": [2, "logistic.request.energy"] },
+    "controller": { "command_stack": ["controller"], 
+                    "data_stack": [] },
     "transporter": { "command_stack": ["transporterJob", "repeatCommand"], 
                      "data_stack": [] },
     "energyRequestResponse": { "command_stack": ["energyRequestResponseJob", "repeatCommand"], 
@@ -72,13 +73,13 @@ def employ(creep):
         "harvester":             {"priority": 5, "minimum": 2, "maximum": 2},
         "builder":               {"priority": 5, "minimum": 1, "maximum": 1},
         "stationaryHarvester":   {"priority": 4, "minimum": 4, "maximum": 4},
-        "energyPickupDeposit":   {"priority": 3, "minimum": 2, "maximum": 4},
+        "energyPickupDeposit":   {"priority": 3, "minimum": 3, "maximum": 4},
         "energyRequestResponse": {"priority": 3, "minimum": 4, "maximum": 5},
         "transporter":           {"priority": 2, "minimum": 3, "maximum": 5},
         "repairer":              {"priority": 1, "minimum": 1},
         "upgrader":              {"priority": 0, "minimum": 2},
     }
-
+    current_job = path_get(creep.memory, "job", None)
     available_jobs = _.filter(Object.keys(creep_jobs),
                                lambda job_name: meets_job_requirements(creep, jobs[job_name]))
     if available_jobs.length == 0:
@@ -100,14 +101,16 @@ def employ(creep):
                 creep_jobs["harvester"].maximum = 0
 
             for job_name in _.sortBy(Object.keys(creep_jobs), lambda job_name: -creep_jobs[job_name].priority):
+                is_my_job = current_job == job_name
+                offset_is_my_job = 1 if is_my_job else 0
                 if not available_jobs.includes(job_name): continue
-                if "maximum" in creep_jobs[job_name] and Memory.employment_statistics[job_name] >= creep_jobs[job_name].maximum:
+                if "maximum" in creep_jobs[job_name] and Memory.employment_statistics[job_name]-offset_is_my_job >= creep_jobs[job_name].maximum:
                     console.log("remove job", job_name)
                     available_jobs.splice( available_jobs.indexOf(job_name), 1)
                     continue
-                elif Memory.employment_statistics[job_name] < creep_jobs[job_name].minimum:
+                elif Memory.employment_statistics[job_name]-offset_is_my_job < creep_jobs[job_name].minimum:
                     creep.memory.job = job_name
-                    Memory.employment_statistics[job_name] += 1
+                    Memory.employment_statistics[job_name] += 1-offset_is_my_job
                     console.log("assign job", creep.memory.job, "to", creep.name)
                     return True
 

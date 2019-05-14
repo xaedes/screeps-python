@@ -23,7 +23,7 @@ def process_job(entity):
 
     if memory.vm.cmd.length == 0:
         # populate vm with job
-        console.log("populate vm on", id_of_entity(entity), "with job", memory.job)
+        # console.log("populate vm on", id_of_entity(entity), "with job", memory.job)
         push_cmd_data(
             entity, 
             job_description.command_stack, 
@@ -38,11 +38,15 @@ def process_job(entity):
             say += " " + str(memory.score)
         entity.say(say)
 
-    process_vm(entity)
+    last_num_iter = path_get(Memory, "vm.last_num_iter", 0)
+    last_num_iter += process_vm(entity)
+    path_set(Memory, "vm.last_num_iter", last_num_iter)
 
     return True
 
 def process_jobs():
+    path_set(Memory, "vm.last_num_iter", 0)
+
     for name in Object.keys(Game.creeps):
         creep = Game.creeps[name]
         if not process_job(creep):

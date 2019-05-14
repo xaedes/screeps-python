@@ -52,17 +52,20 @@ def update_heatmap():
         creep = Game.creeps[name]
         init_heatmap(creep.room)
         if can_build_road(creep.room, creep.pos.x, creep.pos.y):
+            if not creep.room: continue
             creep.room.memory.roads.heatmaps.walk[creep.pos.y][creep.pos.x] += 1
 
 
     roads = _.filter(Game.structures, lambda structure:
         structure.structureType == STRUCTURE_ROAD)
     for road in roads:
+        if not road.room: continue
         road.room.memory.roads.heatmaps.walk[road.pos.y][road.pos.x] = 0
 
     road_constructions = _.filter(Game.constructionSites, lambda constructionSite:
         constructionSite.structureType == STRUCTURE_ROAD)
     for road in road_constructions:
+        if not road.room: continue
         road.room.memory.roads.heatmaps.walk[road.pos.y][road.pos.x] = 0
 
 
@@ -112,7 +115,9 @@ def num_road_constructions():
     for name in Object.keys(Game.rooms):
         room = Game.rooms[name]
         num[name] = _.filter(Game.constructionSites, lambda constructionSite:
-            constructionSite.structureType == STRUCTURE_ROAD and constructionSite.room.name == room.name
+            constructionSite.structureType == STRUCTURE_ROAD 
+            and constructionSite.room 
+            and constructionSite.room.name == room.name
             ).length
 
     return num
