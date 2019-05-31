@@ -53,9 +53,9 @@ def compute_cost_map(terrain_costs, point):
             and terrain_costs[y+dy,x+dx] < np.infty
         ]
         for nx,ny in neighbors:
-            stack.append((nx,ny))
+            
             if cost[y,x] + terrain_costs[ny,nx] < cost[ny,nx]:
-                
+                stack.append((nx,ny))
                 cost[ny,nx] = cost[y,x] + terrain_costs[ny,nx]
                 
     return cost
