@@ -115,3 +115,4 @@ coverage.xml
 /config.private.json
 /git-cloned/
 /markdown/
+jupyterlab/.ipynb_checkpoints/
