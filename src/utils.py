@@ -1,4 +1,6 @@
 
+from constants import *
+
 def idsOf(seq):
     return _.map(seq, lambda item: item.id)
 
@@ -21,6 +23,13 @@ def positionsOf(objs):
 
 def positionsByIds(ids):
     return positionsOf(gameObjectsByIds(ids))
+
+def roundXY(pos):
+    x,y = pos
+    return [Math.round(x), Math.round(y)]
+
+def roundX_Y(x,y):
+    return [Math.round(x), Math.round(y)]
 
 def meanPosition(positions):
     sumx = 0.0
@@ -46,3 +55,27 @@ def roundN(number, num_digits):
 
 def arr_iloc(arr, idx_seq):
     return [arr[idx] for idx in idx_seq]
+
+def arr2d_create(width,height,value):
+    data = [value for _ in range(height*width)]
+    return {
+        "shape": [height, width],
+        "data": data
+    }
+
+def arr_argmin(arr):
+    if arr.length == 0:
+        return -1
+    lowest_k = _.reduce(
+        [k for k in range(1,arr.length)], 
+        lambda lowest_k,k: k if arr[k] < arr[lowest_k] else lowest_k,
+        0)
+    return lowest_k
+
+def neighborhood():
+    return [
+        [dx,dy] 
+        for dx in [-1,0,1]
+        for dy in [-1,0,1]
+        if not ((dx == 0) and (dy == 0))
+    ]

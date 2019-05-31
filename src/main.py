@@ -3,12 +3,14 @@
 from utils import *
 import flags
 import sites
+import distance_transform
+from constants import *
 
 # defs is a package which claims to export all constants and some JavaScript objects, but in reality does
 #  nothing. This is useful mainly when using an editor like PyCharm, so that it 'knows' that things like Object, Creep,
-#  Game, etc. do exist.
+ # Game, etc. do exist.
 # from defs import *
-
+# 
 # These are currently required for Transcrypt in order to use the following names in JavaScript.
 # Without the 'noalias' pragma, each of the following would be translated into something like 'py_Infinity' or
 #  'py_keys' in the output file.
@@ -59,12 +61,21 @@ def main():
     # - creeps transport stuff between flags
     # - flags collect local jobs
     # - worker creeps are assigned to local jobs
-    # 
+    
+
     
     for room_name,room in _.pairs(Game.rooms):
+
+        if "terrain_costs" not in room.memory:
+            room.memory.terrain_costs = distance_transform.terrain_costs(room)
+
         sites.updateSites(room)
         flags.updateFlags(room)
         drawStats(room)
 
+        # costs = distance_transform.terrain_costs(room)
+        # distance_transform.draw_costs(room, costs)
+        # pathcosts = distance_transform.pathcost_transform(costs, room.memory.flags[0].pos)
+        # distance_transform.draw_costs(room, pathcosts)
 
 module.exports.loop = main

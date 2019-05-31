@@ -78,7 +78,12 @@ def updateSites(room):
         # console.log(k,site_id)
         # console.log(site_mem)
         site = Game.getObjectById(site_id)
+        if site == None:
+            del room.memory.sites[site_id]
+            continue
+            
         room.visual.text("site {}".format(k), site.pos)
+
 
     # if True or "clusters" not in room.memory:
     #     rangeThreshold = 10
